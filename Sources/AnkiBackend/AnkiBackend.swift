@@ -315,6 +315,9 @@ extension AnkiBackend {
         package static let schedTimingToday: UInt32 = 5
         package static let countsForDeckToday: UInt32 = 10
         package static let congratsInfo: UInt32 = 11
+        package static let restoreBuriedAndSuspendedCards: UInt32 = 12
+        package static let unburyDeck: UInt32 = 13
+        package static let buryOrSuspendCards: UInt32 = 14
         package static let emptyFilteredDeck: UInt32 = 15
         package static let rebuildFilteredDeck: UInt32 = 16
         package static let scheduleCardsAsNew: UInt32 = 17

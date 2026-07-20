@@ -40,14 +40,20 @@ extension CardClient: DependencyKey {
                     throw error
                 }
             },
-            fetchByNote: { _ in [] },
+            fetchByNote: { noteId in
+                try fetchCardsByNoteId(noteId, backend: backend)
+            },
             save: { _ in },
             answer: { cardId, rating, timeSpent in
                 try scheduler.answerCard(cardId, rating, timeSpent)
             },
             undo: { _ in },
-            suspend: { _ in },
-            bury: { _ in },
+            suspend: { cardId in
+                try applyBuryOrSuspend(cardId: cardId, mode: .suspend, backend: backend)
+            },
+            bury: { cardId in
+                try applyBuryOrSuspend(cardId: cardId, mode: .burySched, backend: backend)
+            },
             flag: { cardId, value in
                 var req = Anki_Cards_SetFlagRequest()
                 req.cardIds = [cardId]
@@ -104,4 +110,56 @@ extension CardClient: DependencyKey {
             }
         )
     }()
+}
+
+private func fetchCardsByNoteId(_ noteId: Int64, backend: AnkiBackend) throws -> [CardRecord] {
+    var searchRequest = Anki_Search_SearchRequest()
+    searchRequest.search = "nid:\(noteId)"
+
+    let searchResponse: Anki_Search_SearchResponse = try backend.invoke(
+        service: AnkiBackend.Service.search,
+        method: AnkiBackend.SearchMethod.searchCards,
+        request: searchRequest
+    )
+
+    return try searchResponse.ids.map { cardId in
+        var cardIdRequest = Anki_Cards_CardId()
+        cardIdRequest.cid = cardId
+
+        let card: Anki_Cards_Card = try backend.invoke(
+            service: AnkiBackend.Service.cards,
+            method: AnkiBackend.CardsMethod.getCard,
+            request: cardIdRequest
+        )
+        return mapCardRecord(card)
+    }
+}
+
+private func applyBuryOrSuspend(
+    cardId: Int64,
+    mode: Anki_Scheduler_BuryOrSuspendCardsRequest.Mode,
+    backend: AnkiBackend
+) throws {
+    var req = Anki_Scheduler_BuryOrSuspendCardsRequest()
+    req.cardIds = [cardId]
+    req.mode = mode
+    try backend.callVoid(
+        service: AnkiBackend.Service.scheduler,
+        method: AnkiBackend.SchedulerMethod.buryOrSuspendCards,
+        request: req
+    )
+}
+
+private func mapCardRecord(_ c: Anki_Cards_Card) -> CardRecord {
+    CardRecord(
+        id: c.id, nid: c.noteID, did: c.deckID,
+        ord: Int32(c.templateIdx), mod: c.mtimeSecs,
+        usn: c.usn, type: Int16(c.ctype),
+        queue: Int16(c.queue), due: c.due,
+        ivl: Int32(c.interval), factor: Int32(c.easeFactor),
+        reps: Int32(c.reps), lapses: Int32(c.lapses),
+        left: Int32(c.remainingSteps), odue: c.originalDue,
+        odid: c.originalDeckID, flags: Int32(c.flags),
+        data: c.customData
+    )
 }
