@@ -123,7 +123,13 @@ struct ReviewView: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             if let cardId = session.currentCardId {
-                                CardContextMenu(cardId: cardId, noteId: session.currentNote?.id)
+                                CardContextMenu(
+                                    cardId: cardId,
+                                    noteId: session.currentNote?.id,
+                                    onActionSuccess: { shouldAdvance in
+                                        session.handleActionResult(shouldAdvance: shouldAdvance)
+                                    }
+                                )
                             }
                             Divider()
                             Button {

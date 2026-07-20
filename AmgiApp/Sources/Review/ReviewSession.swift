@@ -205,6 +205,25 @@ final class ReviewSession {
         stopAudioRequestID += 1
     }
 
+    func handleActionResult(shouldAdvance: Bool) {
+        guard shouldAdvance else { return }
+
+        do {
+            let result = try scheduler.getQueuedCards(200)
+            cardQueue = result.cards
+            remainingCounts = DeckCounts(
+                newCount: result.newCount,
+                learnCount: result.learningCount,
+                reviewCount: result.reviewCount
+            )
+            advanceToNextCard()
+        } catch {
+            print("[ReviewSession] Action refresh failed: \(error)")
+            if !cardQueue.isEmpty { cardQueue.removeFirst() }
+            advanceToNextCard()
+        }
+    }
+
     func refreshAfterEdit() async {
         guard let queued = currentQueuedCard else { return }
 
