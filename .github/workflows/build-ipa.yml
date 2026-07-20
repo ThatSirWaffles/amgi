@@ -58,6 +58,13 @@ jobs:
           toolchain: "1.95"
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
 
+      # ── 4.1 Install nightly toolchain and sources for watchOS build-std
+      - name: Install nightly Rust toolchain and source
+        run: |
+          rustup toolchain install nightly
+          rustup component add rust-src --toolchain nightly
+          rustup target add aarch64-apple-watchos-sim --toolchain nightly
+
       # ── 5. Cache Rust build artifacts ─────────────────────────────
       - name: Cache Rust build artifacts
         uses: actions/cache@v4
